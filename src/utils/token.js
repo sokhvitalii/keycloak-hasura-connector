@@ -1,28 +1,28 @@
 const config = require('./config');
 const userIdFieldName = config.get('UserIdField');
 const logger = require('./logger');
-exports.tokenParser = (content, clientId, debugMode) => {
-    const accessToken = content.access_token;
+exports.tokenParser = (content, debugMode) => {
+    const accessToken = content;
 
-    const userId = accessToken.content[userIdFieldName];
+    const userId = content[userIdFieldName];
 
     let group = {};
 
     let role = {};
 
-    if (accessToken.content && accessToken.realm_access && accessToken.realm_access.roles && Array.isArray(accessToken.realm_access.roles)) {
-    	role['X-Hasura-Realm-Role'] = (accessToken.content.realm_access.roles || []).join(',');
+    if (accessToken && accessToken.realm_access && accessToken.realm_access.roles && Array.isArray(accessToken.realm_access.roles)) {
+    	role['X-Hasura-Realm-Role'] = (accessToken.realm_access.roles || []).join(',');
     }
 
-    if (accessToken.content && Array.isArray(accessToken.content.group)) {
-        group = parseGroup(accessToken.content.group);
+    if (accessToken && Array.isArray(accessToken.group)) {
+        group = parseGroup(accessToken.group);
     }
 
-    const clientResource = accessToken.content.resource_access[clientId];
+    const clientResource = accessToken.resource_access.account;
 
     if (
-        accessToken.content &&
-        accessToken.content.resource_access &&
+        accessToken &&
+        accessToken.resource_access &&
         clientResource &&
         Array.isArray(clientResource.roles) &&
         clientResource.roles.length !== 0

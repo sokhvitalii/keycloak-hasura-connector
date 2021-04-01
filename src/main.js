@@ -6,6 +6,7 @@ const { tokenParser } = require('./utils/token');
 const packageJson = require('../package');
 const logger = require('./utils/logger');
 const httpLogger = require('./middlewares/httpLogger');
+const jwt_decode  = require('jwt-decode');
 
 const debugMode = config.get('debugMode');
 const AnonymousRole = config.get('AnonymousRole');
@@ -25,18 +26,29 @@ app.get('/_health', (req, res) => {
 });
 
 app.get('/', keycloak.middleware(), (req, res) => {
-    if (!req.kauth.grant) {
-        if(AnonymousRole){
-            return res.status(200)
-            .jsonp({
-                 'X-Hasura-Role':AnonymousRole
-            });
-        }else{
-            return res.sendStatus(401);
-        }
+    const token = req.headers.authorization
+
+    let decoded 
+
+    try{
+        decoded = jwt_decode(token);
+    } catch (error){
+        logger.info('request faild: ', error);
+        return res.sendStatus(400);
     }
 
-    const tokenParsed = tokenParser(req.kauth.grant, config.get('kcConfig.clientId'), debugMode);
+    // if (!req.kauth.grant) {
+    //     if(AnonymousRole){
+    //         return res.status(200)
+    //         .jsonp({
+    //              'X-Hasura-Role':AnonymousRole
+    //         });
+    //     }else{
+    //         return res.sendStatus(401);
+    //     }
+    // }
+
+    const tokenParsed = tokenParser(decoded, debugMode);
 
     if (debugMode) {
         logger.info('tokenParsed: ', tokenParsed);
@@ -48,7 +60,7 @@ app.get('/', keycloak.middleware(), (req, res) => {
         });
 });
 
-app.listen(config.get('port'), () => {
+app.listen(4000, () => {
     const port = config.get('port');
     logger.info(`Server running on http://localhost:${ port } port`);
     logger.info(`Version ${ packageJson.version }`);
